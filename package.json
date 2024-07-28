@@ -20,8 +20,7 @@
   "koishi": {
     "description": {
       "zh": "从第三方平台通过指令上传图片到兰空图床"
-    },
-    "preview": true
+    }
   },
   "devDependencies": {
     "typescript": "^5.5.4"
