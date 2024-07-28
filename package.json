@@ -1,0 +1,32 @@
+{
+  "name": "koishi-plugin-lskypro-uploader",
+  "description": "从第三方平台通过指令上传图片到兰空图床",
+  "version": "1.0.1",
+  "main": "lib/index.js",
+  "typings": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "dist"
+  ],
+  "license": "MIT",
+  "scripts": {},
+  "keywords": [
+    "chatbot",
+    "koishi",
+    "plugin"
+  ],
+  "koishi": {
+    "description": {
+      "zh": "从第三方平台通过指令上传图片到兰空图床"
+    },
+    "preview": true
+  },
+  "devDependencies": {},
+  "peerDependencies": {
+    "koishi": "^4.3.2"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WittF/koishi-plugin-lskypro-uploader.git"
+  }
+}
