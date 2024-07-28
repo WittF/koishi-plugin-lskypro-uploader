@@ -23,7 +23,9 @@
     },
     "preview": true
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  },
   "peerDependencies": {
     "koishi": "^4.3.2"
   },
