@@ -65,10 +65,10 @@ export function apply(ctx: Context, config: Config) {
         const uploadedUrl = uploadResponse.data.data.links.url;
         console.log(`[LskyPro Uploader] 图片上传成功，URL: ${uploadedUrl}`);
         activeUploads.delete(key);
-        await session.bot.deleteMessage(session.channelId, tempMessage);  // 撤回正在上传的消息
+        await session.bot.deleteMessage(session.channelId, tempMessage[0]);  // 撤回正在上传的消息
         return session.send(`图片上传成功：${uploadedUrl}`);
       } catch (error) {
-        await session.bot.deleteMessage(session.channelId, tempMessage);
+        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
         if (config.debugMode) console.error(`[LskyPro Uploader] 上传图片时发生错误:`, error);
         activeUploads.delete(key);
         return session.send('上传图片时出错。');
