@@ -1,4 +1,4 @@
-import { Context, Schema } from 'koishi';
+import { Context, Schema, Session, Logger } from 'koishi';
 import axios from 'axios';
 import FormData from 'form-data';
 
@@ -19,7 +19,7 @@ export const schema: Schema<Config> = Schema.object({
 const activeUploads = new Map();
 
 export function apply(ctx: Context, config: Config) {
-  const logger = ctx.logger('lskypro-uploader');
+  const logger = new Logger('lskypro-uploader');
   logger.info(`🚀 插件已加载。调试模式：${config.debugMode ? '启用' : '禁用'}.`);
 
   ctx.command('wtf.upload', '上传图片到兰空图床')
@@ -61,10 +61,10 @@ export function apply(ctx: Context, config: Config) {
         const uploadedUrl = uploadResponse.data.data.links.url;
         logger.info(`✅ 图片上传成功，URL: ${uploadedUrl}`);
         activeUploads.delete(key);
-        await session.bot.deleteMessage(session.channelId, tempMessage);
+        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
         return session.send(`🎉 图片上传成功：${uploadedUrl}`);
       } catch (error) {
-        await session.bot.deleteMessage(session.channelId, tempMessage);
+        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
         logger.error(`🚨 上传图片时发生错误: ${error}`);
         activeUploads.delete(key);
         return session.send('❌ 上传图片时出错。');
