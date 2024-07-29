@@ -21,12 +21,7 @@ const activeUploads = new Map();
 export function apply(ctx: Context, config: Config) {
   console.log("[LskyPro Uploader] 插件已加载。");
 
-  ctx.command('wtf.help', '显示帮助信息')
-    .action(async () => {
-      return '使用 wtf.upload 命令上传图片。';
-    });
-
-  ctx.command('wtf.upload', '从第三方平台通过指令上传图片到兰空图床')
+  ctx.command('wtf.upload', '上传图片到兰空图床')
     .action(async ({ session }) => {
       const key = `${session.userId}:${session.channelId || 'private'}`;
       activeUploads.set(key, true);
@@ -65,7 +60,7 @@ export function apply(ctx: Context, config: Config) {
         const uploadedUrl = uploadResponse.data.data.links.url;
         console.log(`[LskyPro Uploader] 图片上传成功，URL: ${uploadedUrl}`);
         activeUploads.delete(key);
-        await session.bot.deleteMessage(session.channelId, tempMessage[0]);  // 撤回正在上传的消息
+        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
         return session.send(`图片上传成功：${uploadedUrl}`);
       } catch (error) {
         await session.bot.deleteMessage(session.channelId, tempMessage[0]);
