@@ -42,11 +42,11 @@ export function apply(ctx: Context, config: Config) {
 
     if (imageUrl && fileName) {
       const tempMessage = await session.send('🔄 正在上传图片...');
+      logger.info(`🔄 正在上传图片，URL: ${imageUrl}, 文件名: ${fileName}`);
       try {
         const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
         const contentType = response.headers['content-type'];
-        let extension = contentType.split('/')[1];
-        if (extension === 'jpeg') extension = 'jpg';
+        const extension = contentType.split('/')[1];
 
         const form = new FormData();
         form.append('file', response.data, { filename: fileName });
@@ -61,10 +61,17 @@ export function apply(ctx: Context, config: Config) {
         const uploadedUrl = uploadResponse.data.data.links.url;
         logger.info(`✅ 图片上传成功，URL: ${uploadedUrl}`);
         activeUploads.delete(key);
-        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
+        
+        await session.bot.deleteMessage(session.channelId, tempMessage.messageId || tempMessage)
+          .catch(err => {
+            logger.warn(`🚨 撤回消息时发生错误: ${err}`);
+          });
         return session.send(`🎉 图片上传成功：${uploadedUrl}`);
       } catch (error) {
-        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
+        await session.bot.deleteMessage(session.channelId, tempMessage.messageId || tempMessage)
+          .catch(err => {
+            logger.warn(`🚨 撤回消息时发生错误: ${err}`);
+          });
         logger.error(`🚨 上传图片时发生错误: ${error}`);
         activeUploads.delete(key);
         return session.send('❌ 上传图片时出错。');
