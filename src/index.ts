@@ -1,4 +1,4 @@
-import { Context, Schema, Session } from 'koishi';
+import { Context, Schema } from 'koishi';
 import axios from 'axios';
 import FormData from 'form-data';
 
@@ -19,14 +19,15 @@ export const schema: Schema<Config> = Schema.object({
 const activeUploads = new Map();
 
 export function apply(ctx: Context, config: Config) {
-  console.log("[LskyPro Uploader] 插件已加载。");
+  const logger = ctx.logger('lskypro-uploader');
+  logger.info(`🚀 插件已加载。调试模式：${config.debugMode ? '启用' : '禁用'}.`);
 
   ctx.command('wtf.upload', '上传图片到兰空图床')
     .action(async ({ session }) => {
       const key = `${session.userId}:${session.channelId || 'private'}`;
       activeUploads.set(key, true);
-      if (config.debugMode) console.log(`[LskyPro Uploader] 启动图片上传会话: ${key}`);
-      return '请发送图片';
+      logger.info(`📤 启动图片上传会话: 用户ID=${session.userId}, 频道ID=${session.channelId || '私聊'}`);
+      return '📨 请发送图片';
     });
 
   ctx.middleware(async (session, next) => {
@@ -35,12 +36,12 @@ export function apply(ctx: Context, config: Config) {
       return next();
     }
 
-    const matches = session.content.match(/<img.*?src="([^"]+)"/);
+    const matches = session.content.match(/<img.*?src="([^"]+)"\s*file="([^"]+)"/);
     const imageUrl = matches ? matches[1].replace(/&amp;/g, '&') : null;
+    const fileName = matches ? matches[2] : null;
 
-    if (imageUrl) {
-      if (config.debugMode) console.log(`[LskyPro Uploader] 检测到图片URL: ${imageUrl}`);
-      const tempMessage = await session.send('正在上传图片...');
+    if (imageUrl && fileName) {
+      const tempMessage = await session.send('🔄 正在上传图片...');
       try {
         const response = await axios.get(imageUrl, { responseType: 'arraybuffer' });
         const contentType = response.headers['content-type'];
@@ -48,7 +49,7 @@ export function apply(ctx: Context, config: Config) {
         if (extension === 'jpeg') extension = 'jpg';
 
         const form = new FormData();
-        form.append('file', response.data, { filename: `upload.${extension}` });
+        form.append('file', response.data, { filename: fileName });
 
         const uploadResponse = await axios.post(`${config.apiUrl}/upload`, form, {
           headers: {
@@ -58,15 +59,15 @@ export function apply(ctx: Context, config: Config) {
         });
 
         const uploadedUrl = uploadResponse.data.data.links.url;
-        console.log(`[LskyPro Uploader] 图片上传成功，URL: ${uploadedUrl}`);
+        logger.info(`✅ 图片上传成功，URL: ${uploadedUrl}`);
         activeUploads.delete(key);
-        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
-        return session.send(`图片上传成功：${uploadedUrl}`);
+        await session.bot.deleteMessage(session.channelId, tempMessage);
+        return session.send(`🎉 图片上传成功：${uploadedUrl}`);
       } catch (error) {
-        await session.bot.deleteMessage(session.channelId, tempMessage[0]);
-        if (config.debugMode) console.error(`[LskyPro Uploader] 上传图片时发生错误:`, error);
+        await session.bot.deleteMessage(session.channelId, tempMessage);
+        logger.error(`🚨 上传图片时发生错误: ${error}`);
         activeUploads.delete(key);
-        return session.send('上传图片时出错。');
+        return session.send('❌ 上传图片时出错。');
       }
     }
     return next();
