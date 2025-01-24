@@ -29,6 +29,58 @@ export function apply(ctx: Context, config: Config) {
     logger.info(`🚀 插件已加载 调试模式已启用`);
   }
 
+  // 新增生成 Token 的指令，仅限私聊
+  ctx.command('lskybot.token <email> <password>', '生成Token')
+    .action(async ({ session }, email: string, password: string) => {
+      if (!session.channelId.startsWith('private:')) {
+        // 如果不是私聊频道，返回错误
+        const message = [
+          h.quote(session.messageId), // 引用消息
+          h.at(session.userId), // 提及用户
+          '\n',
+          '❌ 为了账户安全，该指令仅可私信使用。' // 错误提示消息
+        ];
+        await session.send(message);
+        return;
+      }
+
+      // 检查邮箱和密码是否为空
+      if (!email || !password) {
+        await session.send('❌ 请提供有效的邮箱和密码进行验证。');
+        logger.warn(`⚠️ 用户 ${session.userId} 未填写邮箱或密码，无法生成 Token`);
+        return;
+      }
+
+      // 输出日志记录
+      logger.info(`🔑 用户 ${session.userId} 请求生成 Token`);
+      if (config.debugMode) {
+        logger.info(`🔍 请求信息：email=${email}, password=*****`); // 不输出密码
+      }
+
+      try {
+        const response = await axios.post(`${config.apiUrl}/tokens`, {
+          email: email,
+          password: password
+        });
+
+        if (response.data.status) {
+          // 返回成功消息
+          const token = response.data.data.token;
+          await session.send(`🎉 Token 生成成功！您的 Token 是: \n ${token}`);
+          logger.info(`✅ Token 生成成功，用户 ${session.userId} 的 Token: ${token}`);
+        } else {
+          // 返回错误消息
+          await session.send(`❌ 生成 Token 失败：${response.data.message}`);
+          logger.warn(`❌ 生成 Token 失败，错误信息: \n ${response.data.message}`);
+        }
+      } catch (error) {
+        logger.error(`🚨 生成 Token 时发生错误: ${error}`);
+        await session.send('❌ 生成 Token 时出错，请检查 API 地址或网络连接');
+      }
+    });
+
+
+  // 上传图片的原有代码保留不变
   ctx.command('lskybot.upload', '上传图片到兰空图床')
     .action(async ({ session }) => {
       const key = `${session.userId}:${session.channelId || 'private'}`;
@@ -118,7 +170,7 @@ export function apply(ctx: Context, config: Config) {
 
         const uploadedUrl = uploadResponse.data.data.links.url;
         const thumbnailUrl = uploadResponse.data.data.links.thumbnail_url || uploadedUrl; // 如果没有缩略图，使用原图
-        logger.info(`✅ 图片上传成功，URL: ${uploadedUrl}`);
+        logger.info(`✅ 图片上传成功，URL: \n ${uploadedUrl}`);
 
         const uploadSession = activeUploads.get(key);
         activeUploads.delete(key); // 删除会话
