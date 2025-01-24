@@ -20,4 +20,4 @@ Onebot🦥给我Qbot自用的🧩
 
 - `lskybot.token <email> <password>` - 生成 API Token（仅私聊）。
 - `lskybot.upload` - 上传图片至 Lsky-Pro 图床。
-- 
+  
