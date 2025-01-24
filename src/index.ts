@@ -84,10 +84,21 @@ export function apply(ctx: Context, config: Config) {
       logger.info(`🔍 收到消息内容: ${session.content}`);
     }
 
-    const matches = session.content.match(/<img.*?src="([^"]+)"[^>]*file="([^"]+)"[^>]*file-size="([^"]+)"/);
-    const imageUrl = matches ? matches[1].replace(/&amp;/g, '&') : null;
-    const fileName = matches ? matches[2] : null;
-    const fileSize = matches ? matches[3] : null;
+    // 检查是否是文件类型
+    const fileMatches = session.content.match(/<file.*?src="([^"]+)".*?file="([^"]+)".*?file-size="([^"]+)"/);
+    
+    if (fileMatches) {
+      // 如果是文件类型，提示用户并结束
+      await session.send('❌ 暂不支持通过文件传输图片，请发送图片消息');
+      activeUploads.delete(key); // 删除会话
+      return; // 确保在此处返回，不再继续后续的上传处理
+    }
+
+    // 检查是否是图片类型
+    const imageMatches = session.content.match(/<img.*?src="([^"]+)"[^>]*file="([^"]+)"[^>]*file-size="([^"]+)"/);
+    const imageUrl = imageMatches ? imageMatches[1].replace(/&amp;/g, '&') : null;
+    const fileName = imageMatches ? imageMatches[2] : null;
+    const fileSize = imageMatches ? imageMatches[3] : null;
 
     if (imageUrl && fileName && fileSize) {
       const tempMessage = await session.send('🔄 正在上传图片，请稍候...');
@@ -152,13 +163,13 @@ export function apply(ctx: Context, config: Config) {
         const failureMessage = isPrivate
           ? [
               h.quote(uploadSession?.messageId || session.messageId),
-              '❌ 上传图片时出错。请稍后再试。'
+              '❌ 上传图片时出错！'
             ]
           : [
               h.quote(uploadSession?.messageId || session.messageId),
               h.at(session.userId),
               '\n',
-              '❌ 上传图片时出错。请稍后再试。'
+              '❌ 上传图片时出错！'
             ];
 
         await session.send(failureMessage);
@@ -176,13 +187,13 @@ export function apply(ctx: Context, config: Config) {
       const noImageMessage = isPrivate
         ? [
             h.quote(uploadSession?.messageId || session.messageId),
-            '⚠️ 未检测到有效的图片。请确保发送的是图片。'
+            '⚠️ 未检测到有效的图片！请检查发送的内容。'
           ]
         : [
             h.quote(uploadSession?.messageId || session.messageId),
             h.at(session.userId),
             '\n',
-            '⚠️ 未检测到有效的图片。请确保发送的是图片。'
+            '⚠️ 未检测到有效的图片消息！请检查发送的内容。'
           ];
 
       return session.send(noImageMessage);
